@@ -1,6 +1,6 @@
 # Open GhushSite
 
-Privacy-first, crowdsourced transparency ledger for anonymous, unverified reports of alleged unofficial payment demands in Bangladesh.
+Privacy-first, crowdsourced transparency ledger for anonymous, unverified reports of alleged unofficial bribery payment demands in Bangladesh.
 
 This repository contains the application and reproducible Supabase schema. It does **not** contain production reports, moderation exports, credentials, analytics identifiers, or investigative evidence.
 
