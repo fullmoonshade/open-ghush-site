@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability or sensitive-data exposure
+    url: https://github.com/fullmoonshade/open-ghush-site/security/advisories/new
+    about: Report privately. Do not include personal data in a public issue.

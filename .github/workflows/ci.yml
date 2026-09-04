@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Apply complete migration chain
+        shell: bash
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create role anon nologin;
+          create role authenticated nologin;
+          create role service_role nologin bypassrls;
+          SQL
+          for migration in supabase/migrations/*.sql; do
+            psql -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Verify moderation and privilege invariants
+        shell: bash
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          insert into public.bribe_reports
+            (department, service, city, district, amount, outcome, description)
+          values
+            ('Land Office', 'Synthetic migration test', 'Dhaka', 'Dhaka',
+             5000, 'refused', 'Synthetic report used only by CI.');
+
+          do $verify$
+          begin
+            begin
+              update public.bribe_reports
+              set is_published = true
+              where service = 'Synthetic migration test';
+              raise exception 'publish_requires_approval did not fire';
+            exception when check_violation then
+              null;
+            end;
+
+            if not (
+              has_table_privilege('anon', 'public.bribe_reports', 'select')
+              and not has_table_privilege('anon', 'public.bribe_reports', 'insert')
+              and has_table_privilege('service_role', 'public.bribe_reports', 'insert')
+              and not has_function_privilege(
+                'anon', 'public.confirm_bribe_report(uuid)', 'execute'
+              )
+              and has_function_privilege(
+                'anon',
+                'public.list_hot_reports(integer,integer,text,text,text,text[])',
+                'execute'
+              )
+            ) then
+              raise exception 'database privilege invariant failed';
+            end if;
+          end
+          $verify$;
+          SQL
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

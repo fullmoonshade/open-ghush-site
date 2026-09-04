@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a reproducible non-security defect
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Do not include real allegations, personal information, credentials, or security vulnerabilities. Use the private security-advisory flow for sensitive reports.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Use synthetic data only.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide the minimum synthetic reproduction.
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or version

@@ -1,0 +1,6 @@
+* @fullmoonshade
+/supabase/migrations/ @fullmoonshade
+/src/app/api/ @fullmoonshade
+/src/lib/server/ @fullmoonshade
+/next.config.ts @fullmoonshade
+/.github/workflows/ @fullmoonshade
